@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Редактор графика ОАР + Анализ</title>
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div class="container" id="app">
+    <div class="drag-message">📂 Перетащите файл сюда</div>
+    <div id="toast" class="toast"></div>
+
+    <!-- МОДАЛЬНОЕ ОКНО МАСТЕРА СОЗДАНИЯ -->
+    <div id="wizardModal" class="modal-overlay" style="display:none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="wizardTitle">Создание новой таблицы</h3>
+                <button class="modal-close" id="wizardCloseBtn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Шаг 1: Параметры таблицы -->
+                <div id="wizardStep1" class="wizard-step">
+                    <h4>Шаг 1 из 2: Выбор периода</h4>
+                    <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin:12px 0;">
+                        <label>Месяц:
+                            <select id="wizardMonthSelect">
+                                <option value="0">Январь</option><option value="1">Февраль</option><option value="2">Март</option>
+                                <option value="3">Апрель</option><option value="4">Май</option><option value="5">Июнь</option>
+                                <option value="6">Июль</option><option value="7">Август</option><option value="8">Сентябрь</option>
+                                <option value="9">Октябрь</option><option value="10">Ноябрь</option><option value="11">Декабрь</option>
+                            </select>
+                        </label>
+                        <label>Год:
+                            <input type="number" id="wizardYearInput" value="2025" style="width:70px;">
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Шаг 2: Список сотрудников -->
+                <div id="wizardStep2" class="wizard-step" style="display:none;">
+                    <h4>Шаг 2 из 2: Выбор сотрудников</h4>
+                    <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px; flex-wrap:wrap;">
+                        <div style="flex:1; min-width:120px; position:relative;">
+                            <input type="text" id="wizardEmployeeName" placeholder="Имя сотрудника" style="padding:4px 8px; border:1px solid #cbd5e1; border-radius:4px; width:100%;">
+                        </div>
+                        <select id="wizardEmployeeCategory" style="padding:4px 8px; border:1px solid #cbd5e1; border-radius:4px;">
+                            <option value="permanent">Постоянный</option>
+                            <option value="parttime">Совместитель</option>
+                        </select>
+                        <button class="btn btn-primary" id="wizardAddEmployeeBtn">➕</button>
+                        <button class="btn btn-danger" id="wizardDeleteEmployeeBtn">🗑️ Удалить выбранных</button>
+                    </div>
+                    <div style="max-height:200px; overflow-y:auto; border:1px solid #e2e8f0; border-radius:4px; padding:4px; margin-bottom:8px;">
+                        <table style="width:100%; font-size:12px; border-collapse:collapse;">
+                            <thead>
+                                <tr>
+                                    <th style="border-bottom:1px solid #d1d5db; width:30px;"><input type="checkbox" id="wizardSelectAll"></th>
+                                    <th style="border-bottom:1px solid #d1d5db; text-align:left;">Имя</th>
+                                    <th style="border-bottom:1px solid #d1d5db; text-align:left;">Категория</th>
+                                </tr>
+                            </thead>
+                            <tbody id="wizardEmployeeList"></tbody>
+                        </table>
+                    </div>
+                    <div id="wizardMessage" style="color:#475569; font-size:13px;"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="wizardPrevBtn" style="display:none;">← Назад</button>
+                <button class="btn btn-primary" id="wizardNextBtn">Далее →</button>
+                <button class="btn btn-success" id="wizardFinishBtn" style="display:none;">✅ Создать</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ОСНОВНАЯ ЧАСТЬ -->
+    <h1 id="mainTitle">
+        <span>📋 Редактор графика работы ОАР</span>
+        <span style="font-size:14px; font-weight:400;">
+            <label>Месяц:
+                <select id="monthSelect">
+                    <option value="0">Январь</option><option value="1">Февраль</option><option value="2">Март</option>
+                    <option value="3">Апрель</option><option value="4">Май</option><option value="5">Июнь</option>
+                    <option value="6">Июль</option><option value="7">Август</option><option value="8">Сентябрь</option>
+                    <option value="9">Октябрь</option><option value="10">Ноябрь</option><option value="11">Декабрь</option>
+                </select>
+            </label>
+            <label>Год:
+                <input type="number" id="yearInput" value="2025" style="width:55px; padding:2px 4px;">
+            </label>
+            <button class="btn btn-primary" id="applyDateBtn" style="padding:2px 6px; font-size:10px;">🔄 Применить</button>
+        </span>
+    </h1>
+
+    <div class="controls no-print" id="mainControls">
+        <button class="btn btn-primary" id="newGraphBtn">➕ Новый график</button>
+        <button class="btn btn-primary" id="addEmployeeBtn">➕ Добавить сотрудника</button>
+
+        <select id="toolsDropdown" class="btn dropdown-btn">
+            <option value="">🔧 Инструменты</option>
+            <option value="analyze">🔍 Проверить ошибки</option>
+            <option value="stats">📊 Анализ загруженности</option>
+            <option value="clear">🗑️ Очистить всё</option>
+        </select>
+
+        <select id="exportDropdown" class="btn dropdown-btn">
+            <option value="">📤 Экспорт</option>
+            <option value="html">📥 HTML</option>
+            <option value="excel">📊 Excel</option>
+            <option value="word">📄 Word</option>
+        </select>
+
+        <button class="btn btn-primary" id="saveGraphBtn">💾 Сохранить</button>
+        <button class="btn btn-secondary" id="loadGraphBtn">📂 Загрузить</button>
+        <input type="file" id="loadFileInput" accept=".json">
+        <span style="margin-left:auto; color:#475569; font-size:11px;">Сотрудников: <span id="empCount">0</span></span>
+        <label style="margin-left:10px;">Масштаб при экспорте:
+            <select id="exportScaleSelect">
+                <option value="6">6px</option>
+                <option value="7">7px</option>
+                <option value="8" selected>8px</option>
+                <option value="9">9px</option>
+                <option value="10">10px</option>
+            </select>
+        </label>
+    </div>
+
+    <div id="analysisResult" class="analysis-result" style="display:none;"></div>
+
+    <!-- ПУСТОЕ СОСТОЯНИЕ (подсказка) -->
+    <div id="emptyState" class="empty-state" style="display:none;">
+        <p>📋 Нет данных. Нажмите «Новый график» для создания или «Загрузить» для открытия файла.</p>
+    </div>
+
+    <div class="table-wrapper" id="tableWrapper">
+        <table id="scheduleTable">
+            <thead id="tableHead"></thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+    </div>
+
+    <div class="footer-tip no-print" id="mainFooter">
+        <span class="badge badge-oper">З, Б, Ж, К</span> – операционная,
+        <span class="badge badge-endo">ЭНД1, ЭНД2, ЭНД3</span> – эндоскопия,
+        <span class="badge badge-dezh">Д</span> – дежурный,
+        <span class="badge badge-weekend">вых</span> – выходной,
+        <span class="badge badge-reserve">до 17 / до 16</span> – резерв (постоянные),
+        <span class="badge badge-reserve">*</span> – доступность (совместители).
+        Клик по ячейке – меню выбора. <strong>💾 Сохранить</strong> – JSON, <strong>📥 Экспорт</strong> – HTML, <strong>📂 Загрузить</strong> или перетащите JSON-файл.
+    </div>
+</div>
+
+<!-- Всплывающие меню -->
+<div class="popup-menu" id="popupMenuEmployee">
+    <button data-value="З">З</button>
+    <button data-value="Б">Б</button>
+    <button data-value="Ж">Ж</button>
+    <button data-value="К">К</button>
+    <div class="divider"></div>
+    <button data-value="ЭНД1">ЭНД1</button>
+    <button data-value="ЭНД2">ЭНД2</button>
+    <button data-value="ЭНД3">ЭНД3</button>
+    <div class="divider"></div>
+    <button data-value="Д">Д</button>
+    <button data-value="вых">вых</button>
+    <div class="divider"></div>
+    <button data-value="до 17">до 17</button>
+    <button data-value="до 16">до 16</button>
+    <div class="divider"></div>
+    <button class="clear-btn" data-value="">✕ Очистить</button>
+</div>
+<div class="popup-menu" id="popupMenuParttime">
+    <button data-value="*">*</button>
+    <div class="divider"></div>
+    <button data-value="З">З</button>
+    <button data-value="Б">Б</button>
+    <button data-value="Ж">Ж</button>
+    <button data-value="К">К</button>
+    <div class="divider"></div>
+    <button data-value="ЭНД1">ЭНД1</button>
+    <button data-value="ЭНД2">ЭНД2</button>
+    <button data-value="ЭНД3">ЭНД3</button>
+    <div class="divider"></div>
+    <button data-value="Д">Д</button>
+    <div class="divider"></div>
+    <button class="clear-btn" data-value="">✕ Очистить</button>
+</div>
+<div class="popup-menu" id="popupMenuEndo">
+    <button data-value="1">1</button>
+    <button data-value="2">2</button>
+    <button data-value="3">3</button>
+    <button data-value="4">4</button>
+    <div class="divider"></div>
+    <button class="clear-btn" data-value="">✕ Очистить</button>
+</div>
+<div class="popup-menu" id="popupMenuOper">
+    <button data-value="1">1</button>
+    <button data-value="2">2</button>
+    <button data-value="3">3</button>
+    <button data-value="4">4</button>
+    <div class="divider"></div>
+    <button class="clear-btn" data-value="">✕ Очистить</button>
+</div>
+
+<!-- Подключение XLSX -->
+<script src="js/xlsx.full.min.js"></script>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
